@@ -36,11 +36,11 @@ You've made $390.1 buying and selling individual equities, received $16.35 in di
 With your starting allocation of $10000, if you had just bought and held QQQ, your PnL would have been $-51.49
 ```
 
-## Run it with custom options
+## Run it and utilize other features
 
 ### See how your portfolio performed over a specified date range	
 
-*Specify `--start_date` and `--end_date` args*
+#### Specify `--start_date` and `--end_date` args
 
 For example:
 
@@ -48,9 +48,9 @@ For example:
 
 ### Export CSV files for further exploration
 
-*Use the `--csv` flag*
+#### Use the `--csv` flag
 
-- The script can output a number of CSV files:
+The script can output a number of CSV files:
 	- `pnl_df.csv` shows your profit-and-loss per ticker, and any dividends you've been paid out (dividends are not summed into `net_pnl`)
 	- `divs_raw.csv` is the full data dump of your dividend history (and future dividends)
 	- `orders.csv` contains all of your individual buy and sell orders (including orders that didn't execute)
@@ -62,7 +62,7 @@ For example:
 
 ### Export dataframes as pickles for further exploration:
 
-*Use the `--pickle` flag*
+#### Use the `--pickle` flag
 
 Similar exports to the CSV section, but as pickled dataframes which can be loaded directly into pandas for further exploration like so:
 ```
@@ -85,7 +85,7 @@ For example:
 
 ### Specify your starting allocation for an accurate buy-and-hold comparison
 
-*Specify the `--starting_allocation` arg*
+#### Specify the `--starting_allocation` arg
 
 How would your portfolio have performed if you had just put that same amount of money into buying the NASDAQ? Input the amount of money you started investing with in Robinhood.
 
