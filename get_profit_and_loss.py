@@ -1,3 +1,4 @@
+import argparse
 import csv
 import os
 import numpy as np
@@ -80,7 +81,7 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
                     
             # Should handle free gift stocks
             elif stock.net_shares < 0:
-                stock.symbol += 'RH Free Gift'
+                stock.symbol += ' '
 
 
     # INSTANTIATE ROBINHOOD my_trader #
@@ -98,6 +99,12 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
     df_orders = df_orders.set_index('date')
     df_orders = df_orders[start_date:end_date]
     df_orders['date'] = df_orders.index
+
+    if pickle == 1:
+        df_orders.to_pickle('df_orders_history')
+
+    if start_date == 'January 1, 2012':
+        start_date = df_orders.iloc[0]['date'].strftime('%B %d, %Y')
 
     df_orders.set_index('side').to_csv('orders.csv', header=None)
     stocks = itemize_stocks()
@@ -212,7 +219,7 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
 
         QQQ_buy_and_hold_gain = starting_allocation*(QQQ_ending_price - QQQ_starting_price)/QQQ_starting_price
 
-    if end_date == 'January 1, 2020':
+    if end_date == 'January 1, 2030':
         end_date_string = 'today'
     else:
         end_date_string = end_date
@@ -227,39 +234,71 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
             options_pnl = df_options_orders_history[start_date:end_date]['value'].sum()
         except Exception as e:
             options_pnl = 0
-
+    print("~~~")
     print("From {} to {}, your total PnL is ${}".format(start_date, end_date_string, round(pnl + dividends_paid + options_pnl), 2))
     print("You've made ${} buying and selling individual equities, received ${} in dividends, and ${} on options trades".format(round(pnl,2), round(dividends_paid,2), round(options_pnl,2)))
     
     if buy_and_hold == 1:
-        print("With your starting allocation of ${}, if you had just bought and held QQQ, you would have made ${}".format(starting_allocation, round(QQQ_buy_and_hold_gain,2)))
-    
+        print("With your starting allocation of ${}, if you had just bought and held QQQ, your PnL would be ${}".format(starting_allocation, round(QQQ_buy_and_hold_gain,2)))
+    print("~~~")
     # Delete the csv we were processing earlier
     os.remove('stockwise_pl.csv')
 
 if __name__ == '__main__':
 
-    try:
-        start_date = sys.argv[3]
-    except Exception as e:
-        start_date = 'January 1, 2013'
+    # initiate the parser
+    parser = argparse.ArgumentParser()  
+    parser.add_argument("--username", help="username (required)")
+    parser.add_argument("--password", help="password (required)")
+    parser.add_argument("--start_date", help="begin date for calculations")
+    parser.add_argument("--end_date", help="begin date for calculations")
+    parser.add_argument("--starting_allocation", help="starting allocation for buy and hold")
+    parser.add_argument("--csv", help="save csvs along the way", action="store_true")
+    parser.add_argument("--pickle", help="save pickles along the way", action="store_true")
 
-    try:
-        end_date = sys.argv[4]
-    except Exception as e:
-        end_date = 'January 1, 2020'
+    # read arguments from the command line
+    args = parser.parse_args()
+
+    if args.username and args.password:
+        print("Working...")
+    else:
+        print("Please enter a username and password and try again!")
+        sys.exit()
+
+    # check for flag
+    if args.csv:  
+        csv_export = 1
+    else:
+        csv_export = 0
+
+    # check for flag
+    if args.pickle:  
+        pickle = 1
+    else:
+        pickle = 0
+
+    if args.start_date:
+        start_date = args.start_date
+    else:
+        start_date = 'January 1, 2012'
     
-    try:
-        starting_allocation = int(sys.argv[5])
-    except Exception as e:
+    if args.end_date:
+        end_date = args.end_date
+    else:
+        end_date = 'January 1, 2030'
+
+    if args.starting_allocation:
+        starting_allocation = float(args.starting_allocation)
+    else:
         starting_allocation = 10000
 
-    rh_profit_and_loss(username=sys.argv[1], 
-                        password=sys.argv[2], 
+    rh_profit_and_loss(username=args.username, 
+                        password=args.password,
                         start_date=start_date, 
                         end_date=end_date, 
                         starting_allocation=starting_allocation, 
-                        csv_export=1, 
+                        csv_export=csv_export, 
                         buy_and_hold=1,
                         options=1, 
-                        pickle=0)
+                        pickle=pickle)
+
