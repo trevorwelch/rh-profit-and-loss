@@ -9,7 +9,7 @@ import operator
 import TW_robinhood_scripts as rh
 import Robinhood
 
-def rh_profit_and_loss(username=None, password=None, starting_equity=5000, start_date=None, end_date=None, csv_export=1, buy_and_hold=0, pickle=0):
+def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, start_date=None, end_date=None, csv_export=1, buy_and_hold=0, pickle=0, options=1):
 
     class Order:
         def __init__(self, side, symbol, shares, price, date, state):
@@ -88,8 +88,6 @@ def rh_profit_and_loss(username=None, password=None, starting_equity=5000, start
     logged_in = my_trader.login(username=username, password=password)
     my_account = my_trader.get_account()['url']
 
-
-
     df_order_history, _ = rh.get_order_history(my_trader)
     df_orders = df_order_history[['side', 'symbol', 'shares', 'avg_price', 'date', 'state']]
     df_orders.columns = ['side', 'symbol', 'shares', 'price', 'date', 'state']
@@ -143,7 +141,7 @@ def rh_profit_and_loss(username=None, password=None, starting_equity=5000, start
         df_dividends.loc[each.id, 'ticker'] = symbol
 
     if pickle == 1:
-        df_dividends.to_pickle('dividends_df')
+        df_dividends.to_pickle('df_dividends')
 
     if csv_export == 1:
         df_dividends.to_csv('divs_raw.csv')
@@ -187,59 +185,64 @@ def rh_profit_and_loss(username=None, password=None, starting_equity=5000, start
         # df_divs_summed.to_csv('divs_summed_df.csv')
         df_pnl.to_csv('pnl_df.csv')
 
-    # Create a df that only includes the dividend payouts
-    df_pnl_divs_only = df_pnl[df_pnl['div_payouts'].isnull() == False]
+    # Calculate the dividends received (or that are confirmed you will receive in the future)
+    dividends_paid = float(df_pnl.sum()['div_payouts'])
 
-    # Create a df that only includes non-div paying trades
-    pnl_no_divs = df_pnl[df_pnl['div_payouts'].isnull() == True]
-
-    # Calculate profit and loss including div payouts on the divs_only df
-    df_pnl_divs_only['pnl_with_divs'] = pd.to_numeric(df_pnl_divs_only['net_pnl']) + pd.to_numeric(df_pnl_divs_only['div_payouts'])
-
-    # Re-sort the divs_only data from highest to lowest
-    df_pnl_divs_only = df_pnl_divs_only.sort_values('pnl_with_divs', ascending=False)
-
-    # Calculate the sum of the divs_only trades, now including the dividends
-    div_only_pnl = df_pnl_divs_only['pnl_with_divs'].sum()
-
-    # Calculate the sum of the non_divs trades
-    total_pnl_non_div = pnl_no_divs['net_pnl'].sum()
+    # Calculate the total pnl 
+    pnl = float(df_pnl.sum()['net_pnl'])
 
     if buy_and_hold == 1:
 
-        requestResponse = requests.get("https://api.iextrading.com/1.0/stock/spy/chart/5y")
+        # Get historical price of QQQ 
+        requestResponse = requests.get("https://api.iextrading.com/1.0/stock/qqq/chart/5y")
         json = requestResponse.json()
-        df_spy = pd.DataFrame(json)
-        df_spy.index = pd.to_datetime(df_spy['date'])
-        df_spy = df_spy[start_date:end_date]
+        df_qqq = pd.DataFrame(json)
+        df_qqq.index = pd.to_datetime(df_qqq['date'])
 
-        SPY_starting_price = float(df_spy.iloc[0]['close'])
+        if pd.to_datetime(start_date) < df_qqq.iloc[0].name:
+            df_QQQ_history = pd.read_pickle('data/QQQ_close')
+            QQQ_starting_price = float(df_QQQ_history.iloc[0]['close'])
+        else:
+            df_qqq = df_qqq[start_date:end_date]
+            QQQ_starting_price = float(df_qqq.iloc[0]['close'])
 
-        SPY_ending_price = float(df_spy.iloc[-1]['close'])
+        df_qqq = df_qqq[start_date:end_date]
 
-        SPY_buy_and_hold_gain = starting_equity*(SPY_ending_price - SPY_starting_price)/SPY_starting_price
+        QQQ_ending_price = float(df_qqq.iloc[-1]['close'])
+
+        QQQ_buy_and_hold_gain = starting_allocation*(QQQ_ending_price - QQQ_starting_price)/QQQ_starting_price
 
     if end_date == 'January 1, 2020':
         end_date_string = 'today'
     else:
         end_date_string = end_date
 
-    print("From {} to {}, you've made ${} on trades with dividends, ${} on trades without dividends, for a total PnL of ${}.".format(start_date, end_date_string, round(div_only_pnl,2), round(total_pnl_non_div,2), round((round(total_pnl_non_div,2) + round(div_only_pnl,2)), 2)))
+    if options == 1:
+        try:
+            df_options_orders_history = rh.get_all_history_options_orders(my_trader)
+            if csv_export == 1:
+                df_options_orders_history.to_csv('options_orders_history_df.csv')
+            if pickle == 1:
+                df_options_orders_history.to_pickle('df_options_orders_history')
+            options_pnl = df_options_orders_history[start_date:end_date]['value'].sum()
+        except Exception as e:
+            options_pnl = 0
+
+    print("From {} to {}, your total PnL is ${}".format(start_date, end_date_string, round(pnl + dividends_paid + options_pnl), 2))
+    print("You've made ${} buying and selling individual equities, received ${} in dividends, and ${} on options trades".format(round(pnl,2), round(dividends_paid,2), round(options_pnl,2)))
     
     if buy_and_hold == 1:
-        print("With your starting portfolio of ${}, if you had just bought and held SPY, you would have made ${}".format(starting_equity, round(SPY_buy_and_hold_gain,2)))
+        print("With your starting allocation of ${}, if you had just bought and held QQQ, you would have made ${}".format(starting_allocation, round(QQQ_buy_and_hold_gain,2)))
     
     # Delete the csv we were processing earlier
     os.remove('stockwise_pl.csv')
-
-    return total_pnl_non_div, div_only_pnl
 
 if __name__ == '__main__':
 
     try:
         start_date = sys.argv[3]
     except Exception as e:
-        start_date = 'January 1, 2015'
+        start_date = 'January 1, 2013'
 
     try:
         end_date = sys.argv[4]
@@ -247,15 +250,16 @@ if __name__ == '__main__':
         end_date = 'January 1, 2020'
     
     try:
-        starting_equity = int(sys.argv[5])
+        starting_allocation = int(sys.argv[5])
     except Exception as e:
-        starting_equity = 10000
+        starting_allocation = 10000
 
     rh_profit_and_loss(username=sys.argv[1], 
                         password=sys.argv[2], 
                         start_date=start_date, 
                         end_date=end_date, 
-                        starting_equity=starting_equity, 
+                        starting_allocation=starting_allocation, 
                         csv_export=1, 
-                        buy_and_hold=1, 
+                        buy_and_hold=1,
+                        options=1, 
                         pickle=0)

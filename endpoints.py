@@ -47,6 +47,9 @@ def notifications():
 def orders(orderId=None):
     return "https://api.robinhood.com/orders/" + ("{id}/".format(id=orderId) if orderId else "")
 
+def options_orders(orderId=None):
+    return "https://api.robinhood.com/options/orders/" + ("{id}/".format(id=orderId) if orderId else "")
+
 def password_reset():
     return "https://api.robinhood.com/password_reset/request/"
 

@@ -2,25 +2,31 @@
 
 ## Download the repo
 From the command line: 
+
 `git clone git@github.com:trevorwelch/rh-profit-and-loss.git`
+
 `cd rh-profit-and-loss`
 
 ## Run it, run it
 
-Run with defaults:
+Run with defaults (from your full account history):
+
 `python3 get_profit_and_loss.py <username> <password>` 
 
 If you want to find out how much you made over only a given date range, and specify how much money you initially invested with to simulate a buy-and-hold strategy for comparison:
-`python3 get_profit_and_loss.py <username> <password> <start_date> <end_date> <starting_equity>` 
+
+`python3 get_profit_and_loss.py <username> <password> <start_date> <end_date> <starting_allocation>` 
 
 Make sure the commands are in that order, and each is in quotes, like:
+
 `python3 get_profit_and_loss.py 'timmyturtlehands' 'LovePizzaFhdjeiw!22222' 'July 1, 2018' 'November 10, 2018' '5000'`
 
 You'll see output like:
 
 ```
-From July 1, 2018 to November 10, 2018, you've made $28.62 on trades with dividends, $951.94 on trades without dividends, for a total PnL of $980.56.
-With your starting portfolio of $10000, if you had just bought and held SPY, you would have made $4161.21
+From November 4, 2018 to November 15, 2018, your total PnL is -$224.0
+You've made $-390.1 buying and selling individual equities, received $16.35 in dividends, and made $0.0 on options trades
+With your starting allocation of $10000, if you had just bought and held QQQ, you would have made $-51.49
 ```
 
 Hope you enjoy it!
@@ -28,9 +34,10 @@ Hope you enjoy it!
 ### Bonus
 
 - The script outputs a number of CSV files that include dividend payouts, complete list of trades made, and profit per ticker for the date range provided. You can mess with these in Excel/Google Docs:
-- - `pnl_df.csv` which shows your profit-and-loss per ticker, and any dividends you've been paid out (not summed into PnL)
-- - `divs_raw.csv` which is the full data dump with your dividend history (and future dividends)
-- - `orders.csv` which contains all of your individual buys and sells in raw format, whether they executed or not 
+- - `pnl_df.csv` shows your profit-and-loss per ticker, and any dividends you've been paid out (dividends are not summed into `net_pnl`)
+- - `divs_raw.csv` is the full data dump of your dividend history (and future dividends)
+- - `orders.csv` contains all of your individual buys and sells in raw format, whether they executed or not 
+- - `options_orders_history_df.csv` contains a simplified record of your options purchases
 
 ### Requirements
 
