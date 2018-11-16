@@ -68,7 +68,7 @@ class Robinhood:
             "Accept-Language": "en;q=1, fr;q=0.9, de;q=0.8, ja;q=0.7, nl;q=0.6, it;q=0.5",
             "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
             "Connection": "keep-alive",
-            "User-Agent": "Robinhood/6.28.0 (com.robinhood.release.Robinhood; build:5771; iOS 11.4.1) Alamofire/4.5.1 user:e44d4e3e-49db-4a76-b9fc-2cf0301aef53"
+            "User-Agent": "Robinhood/6.28.0 (com.robinhood.release.Robinhood; build:5771; iOS 11.4.1) Alamofire/4.5.1"
         }
         self.session.headers = self.headers
         self.auth_method = self.login_prompt

@@ -12,6 +12,7 @@ import Robinhood
 
 def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, start_date=None, end_date=None, csv_export=1, buy_and_hold=0, pickle=0, options=1):
 
+    # from rmccorm4 Robinhood-Scraper
     class Order:
         def __init__(self, side, symbol, shares, price, date, state):
             self.side = side
@@ -123,24 +124,24 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
             total_trades += num_trades
         writer.writerow(['Totals', total_pl, total_trades])
         # print('Created', outfile.name, 'in this directory.')
-        
+    
+    # Read the pnl we generated       
     df_pnl = pd.read_csv('stockwise_pl.csv')
 
+    # Get dividends from Robinhood
     dividends = Robinhood.Robinhood.dividends(my_trader)
 
+    # Put the dividends in a dataframe
     list_of_records = []
     for each in dividends['results']:
         list_of_records.append(pd.DataFrame(pd.Series(each)).T)
 
     df_dividends = pd.concat(list_of_records)
+    df_dividends = df_dividends.set_index('id')
+    df_dividends['id'] = df_dividends.index
 
     # Load in our pickled database of instrument-url lookups
     instruments_df = pd.read_pickle('symbol_and_instrument_urls')
-
-    df_dividends = df_dividends.set_index('id')
-
-    df_dividends['id'] = df_dividends.index
-
     
     df_dividends['ticker'] = np.nan
     for each in df_dividends.itertuples():
@@ -206,6 +207,7 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
         df_qqq = pd.DataFrame(json)
         df_qqq.index = pd.to_datetime(df_qqq['date'])
 
+        # If the date is older than we can get from IEX, load the historical data
         if pd.to_datetime(start_date) < df_qqq.iloc[0].name:
             df_QQQ_history = pd.read_pickle('data/QQQ_close')
             QQQ_starting_price = float(df_QQQ_history.iloc[0]['close'])
@@ -213,17 +215,22 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
             df_qqq = df_qqq[start_date:end_date]
             QQQ_starting_price = float(df_qqq.iloc[0]['close'])
 
+        # Filter the dataframe for start and end date
         df_qqq = df_qqq[start_date:end_date]
 
+        # Set end price of the trading period
         QQQ_ending_price = float(df_qqq.iloc[-1]['close'])
 
+        # Calculate the buy-and-hold value
         QQQ_buy_and_hold_gain = starting_allocation*(QQQ_ending_price - QQQ_starting_price)/QQQ_starting_price
 
+    # When printing the final output, if no date was provided, print "today"
     if end_date == 'January 1, 2030':
         end_date_string = 'today'
     else:
         end_date_string = end_date
 
+    # Retrieve options history
     if options == 1:
         try:
             df_options_orders_history = rh.get_all_history_options_orders(my_trader)
@@ -234,6 +241,8 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
             options_pnl = df_options_orders_history[start_date:end_date]['value'].sum()
         except Exception as e:
             options_pnl = 0
+
+    # Print final output            
     print("~~~")
     print("From {} to {}, your total PnL is ${}".format(start_date, end_date_string, round(pnl + dividends_paid + options_pnl), 2))
     print("You've made ${} buying and selling individual equities, received ${} in dividends, and ${} on options trades".format(round(pnl,2), round(dividends_paid,2), round(options_pnl,2)))
@@ -246,7 +255,7 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
 
 if __name__ == '__main__':
 
-    # initiate the parser
+    # Parse command line arguments
     parser = argparse.ArgumentParser()  
     parser.add_argument("--username", help="username (required)")
     parser.add_argument("--password", help="password (required)")
@@ -256,7 +265,6 @@ if __name__ == '__main__':
     parser.add_argument("--csv", help="save csvs along the way", action="store_true")
     parser.add_argument("--pickle", help="save pickles along the way", action="store_true")
 
-    # read arguments from the command line
     args = parser.parse_args()
 
     if args.username and args.password:
@@ -277,16 +285,19 @@ if __name__ == '__main__':
     else:
         pickle = 0
 
+    # check for start date
     if args.start_date:
         start_date = args.start_date
     else:
         start_date = 'January 1, 2012'
     
+    # check for end date
     if args.end_date:
         end_date = args.end_date
     else:
         end_date = 'January 1, 2030'
 
+    # check of allocation
     if args.starting_allocation:
         starting_allocation = float(args.starting_allocation)
     else:
@@ -301,4 +312,3 @@ if __name__ == '__main__':
                         buy_and_hold=1,
                         options=1, 
                         pickle=pickle)
-
