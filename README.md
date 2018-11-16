@@ -83,7 +83,7 @@ For example:
 
 `python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --pickle`
 
-### Specify your starting allocation for an accurate buy-and-hold comparison
+### Input your starting portfolio allocation for an accurate buy-and-hold comparison
 
 #### Specify the `--starting_allocation` arg
 
