@@ -110,6 +110,8 @@ six
 
 - If the stock isn't sold yet, it uses the last sale price from IEX to calculate your unrealized PnL. 
 
+- If you haven't closed an option, it will show as a loss for the full value you purchased for. It's a bit too complicated to try to calculate unrealized PnL for options. And anyway, it's a good lesson in the reality of options!
+
 - The `symbols_and_instruments_url` is a lookup table that provides RH's internal instrument ids for symbols, and vice versa, which are needed to interact with the API. By saving and updating this pickle, you reduce the amount of requests you make to the RH API. 
 
 - Special thanks to everyone who maintains the unofficial RH Python library, of which a modified version is included in this repo (https://github.com/Jamonek/Robinhood) 
