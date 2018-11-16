@@ -239,7 +239,7 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
     print("You've made ${} buying and selling individual equities, received ${} in dividends, and ${} on options trades".format(round(pnl,2), round(dividends_paid,2), round(options_pnl,2)))
     
     if buy_and_hold == 1:
-        print("With your starting allocation of ${}, if you had just bought and held QQQ, your PnL would be ${}".format(starting_allocation, round(QQQ_buy_and_hold_gain,2)))
+        print("With a starting allocation of ${}, if you had just bought and held QQQ, your PnL would be ${}".format(starting_allocation, round(QQQ_buy_and_hold_gain,2)))
     print("~~~")
     # Delete the csv we were processing earlier
     os.remove('stockwise_pl.csv')

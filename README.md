@@ -2,12 +2,21 @@
 
 A python script to get a quick look at your profit and loss from trading options and individual equities on Robinhood, sum dividend payouts, and generate your trading history. 
 
+## Features
+
+- *Calculate individual equities trading pnl, dividends received, options trading pnl*
+- *Export CSV files with individual trades and other info*
+- *Export pickled dataframes*
+- *Specify date range to compare over*
+- *Generate buy-and-hold comparison*
+
 ## Download the repo
 From the command line: 
 
-`git clone git@github.com:trevorwelch/rh-profit-and-loss.git`
-
-`cd rh-profit-and-loss`
+```
+git clone git@github.com:trevorwelch/rh-profit-and-loss.git
+cd rh-profit-and-loss
+```
 
 ## Run it, run it
 
@@ -15,35 +24,45 @@ Run with defaults (this will process your full account history):
 
 `python3 get_profit_and_loss.py --username <username> --password <password>` 
 
-For example: `python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizzaFhdjeiw!11one'`
+For example: 
+
+`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one'`
 
 You'll see output like:
 
 ```
-From November 4, 2018 to November 15, 2018, your total PnL is $486.45
+From November 4, 2018 to today, your total PnL is $486.45
 You've made $390.1 buying and selling individual equities, received $16.35 in dividends, and made $80.0 on options trades
 With your starting allocation of $10000, if you had just bought and held QQQ, your PnL would have been $-51.49
 ```
 
 ## Run it with custom options
 
-### See your PnL over a specified date range	
+### See how your portfolio performed over a specified date range	
 
-If you want to find out how your portfolio performed over only a given date range:
+*Specify `--start_date` and `--end_date` args*
 
-`python3 get_profit_and_loss.py --username <username> --password <password> --start_date <start_date> --end_date <end_date>` 
+For example:
+
+`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --start_date 'July 1, 2018' --end_date 'August 1, 2018'` 
 
 ### Export CSV files for further exploration
+
+*Use the `--csv` flag*
 
 - The script can output a number of CSV files:
 	- `pnl_df.csv` shows your profit-and-loss per ticker, and any dividends you've been paid out (dividends are not summed into `net_pnl`)
 	- `divs_raw.csv` is the full data dump of your dividend history (and future dividends)
-	- `orders.csv` contains all of your individual buys and sells in raw format, whether they executed or not 
-	- `options_orders_history_df.csv` contains a simplified record of your options purchases
+	- `orders.csv` contains all of your individual buy and sell orders (including orders that didn't execute)
+	- `options_orders_history_df.csv` contains a simplified record of your options activity
 
-Use flag `--csv` to enable this.
+For example:
+
+`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --csv`
 
 ### Export dataframes as pickles for further exploration:
+
+*Use the `--pickle` flag*
 
 Similar exports to the CSV section, but as pickled dataframes which can be loaded directly into pandas for further exploration like so:
 ```
@@ -60,9 +79,21 @@ print("Your best individual equities trade over this time period was with {}, wi
 print("Your worst individual equities trade over this time period was with {}, with ${} in gains".format(worst_ticker, worst_ticker_pnl))
 ```
 
-Use flag `--pickle` to enable pickling of dataframes.
+For example:
 
-### Example command with custom options
+`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --pickle`
+
+### Specify your starting allocation for an accurate buy-and-hold comparison
+
+*Specify the `--starting_allocation` arg*
+
+How would your portfolio have performed if you had just put that same amount of money into buying the NASDAQ? Input the amount of money you started investing with in Robinhood.
+
+For example:
+
+`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --starting_allocation 5000`
+
+### Example command with custom options chained together
 
 `python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizzaFhdjeiw!22222' --start_date 'July 1, 2018' --end_date 'November 10, 2018' --starting_allocation '5000' --csv`
 
