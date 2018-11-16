@@ -1,10 +1,10 @@
 # RH Profit and Loss
 
-A Python script to get a quick look at your profit and loss from trading options and individual equities on Robinhood, sum dividend payouts, and generate your trading history. 
+A Python script to get a look at your trading history from trading options and individual equities on Robinhood: calculate profit/loss, sum dividend payouts and generate buy-and-hold comparison. 
 
 ## Features
 
-- *Calculate individual equities trading pnl, dividends received, options trading pnl*
+- *Calculate individual equities' trading pnl, dividends received, options trading pnl*
 - *Export CSV files with individual trades and other info*
 - *Export pickled dataframes*
 - *Specify date range to compare over*
