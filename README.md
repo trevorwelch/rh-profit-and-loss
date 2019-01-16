@@ -20,13 +20,13 @@ cd rh-profit-and-loss
 
 ## Run it, run it
 
-Run with defaults (this will process your full account history):
+Run with defaults (this will process your full account history, starting from your first trade):
 
 `python3 get_profit_and_loss.py --username <username> --password <password>` 
 
 For example: 
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one'`
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one'`
 
 You'll see output like:
 
@@ -44,7 +44,7 @@ With your starting allocation of $10000, if you had just bought and held QQQ, yo
 
 For example:
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --start_date 'July 1, 2018' --end_date 'August 1, 2018'` 
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --start_date 'July 1, 2018' --end_date 'August 1, 2018'` 
 
 ### Export CSV files for further exploration
 
@@ -58,7 +58,7 @@ The script can output a number of CSV files:
 
 For example:
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --csv`
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --csv`
 
 ### Export dataframes as pickles for further exploration:
 
@@ -81,7 +81,7 @@ print("Your worst individual equities trade over this time period was with {}, w
 
 For example:
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --pickle`
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --pickle`
 
 ### Input your starting portfolio allocation for an accurate buy-and-hold comparison
 
@@ -91,11 +91,11 @@ How would your portfolio have performed if you had just put that same amount of 
 
 For example:
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizza!11one' --starting_allocation 5000`
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --starting_allocation 5000`
 
 ### Example command with custom options chained together
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands' --password 'LovePizzaFhdjeiw!22222' --start_date 'July 1, 2018' --end_date 'November 10, 2018' --starting_allocation '5000' --csv`
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizzaFhdjeiw!22222' --start_date 'July 1, 2018' --end_date 'November 10, 2018' --starting_allocation '5000' --csv`
 
 ### Requirements
 
@@ -116,6 +116,6 @@ six
 
 - Special thanks to everyone who maintains the unofficial RH Python library, of which a modified version is included in this repo (https://github.com/Jamonek/Robinhood) 
 
-- Some of the order history code is from (https://github.com/rmccorm4/Robinhood-Scraper/blob/master/Robinhood/robinhood_pl.py) 
+- Some of the order history code is borrowed from (https://github.com/rmccorm4/Robinhood-Scraper/blob/master/Robinhood/robinhood_pl.py) 
 
 - For the buy-and-hold calculation, QQQ historical data is from (https://www.kaggle.com/qks1lver/amex-nyse-nasdaq-stock-histories) and IEX, depending on how far back you're going. 
