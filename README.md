@@ -93,6 +93,8 @@ For example:
 
 `python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --starting_allocation 5000`
 
+PS: If you enter your starting allocation, you'll also get an ROI metric.
+
 ### Example command with custom options chained together
 
 `python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizzaFhdjeiw!22222' --start_date 'July 1, 2018' --end_date 'November 10, 2018' --starting_allocation '5000' --csv`

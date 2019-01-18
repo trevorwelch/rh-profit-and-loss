@@ -242,10 +242,18 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
         except Exception as e:
             options_pnl = 0
 
+    total_pnl = round(pnl + dividends_paid + options_pnl, 2)
+
+
     # Print final output            
     print("~~~")
-    print("From {} to {}, your total PnL is ${}".format(start_date, end_date_string, round(pnl + dividends_paid + options_pnl), 2))
+    print("From {} to {}, your total PnL is ${}".format(start_date, end_date_string, total_pnl))
     print("You've made ${} buying and selling individual equities, received ${} in dividends, and ${} on options trades".format(round(pnl,2), round(dividends_paid,2), round(options_pnl,2)))
+    
+    # Calculate ROI, if the user input a starting allocation
+    if roi == 1:
+        return_on_investment = round((total_pnl/starting_allocation)*100, 2)
+        print("Your return-on-investment (ROI) is: %{}".format(return_on_investment))
     
     if buy_and_hold == 1:
         print("With a starting allocation of ${}, if you had just bought and held QQQ, your PnL would be ${}".format(starting_allocation, round(QQQ_buy_and_hold_gain,2)))
@@ -300,8 +308,10 @@ if __name__ == '__main__':
     # check of allocation
     if args.starting_allocation:
         starting_allocation = float(args.starting_allocation)
+        roi = 1
     else:
         starting_allocation = 10000
+        roi = 0
 
     rh_profit_and_loss(username=args.username, 
                         password=args.password,
