@@ -62,6 +62,9 @@ def positions():
 def quotes():
     return "https://api.robinhood.com/quotes/"
 
+def options_base():
+    return "https://api.robinhood.com/options/"
+
 def historicals():
     return "https://api.robinhood.com/quotes/historicals/"
 
@@ -86,14 +89,22 @@ def tags(tag=None):
     '''
     return "https://api.robinhood.com/midlands/tags/tag/{_tag}/".format(_tag=tag)
 
+api_url = "https://api.robinhood.com"       
+
+def options_base():
+    return api_url + "/options/"
+
 def chain(instrumentid):
-    return "https://api.robinhood.com/options/chains/?equity_instrument_ids={_instrumentid}".format(_instrumentid=instrumentid)
+    return api_url + "/options/chains/?equity_instrument_ids={_instrumentid}".format(_instrumentid=instrumentid)
 
 def options(chainid, dates, option_type):
-    return "https://api.robinhood.com/options/instruments/?chain_id={_chainid}&expiration_dates={_dates}&state=active&tradability=tradable&type={_type}".format(_chainid=chainid, _dates=dates, _type=option_type)
+    return api_url + "/options/instruments/?chain_id={_chainid}&expiration_dates={_dates}&state=active&tradability=tradable&type={_type}".format(_chainid=chainid, _dates=dates, _type=option_type)
 
-def market_data(optionid):
-    return "https://api.robinhood.com/marketdata/options/{_optionid}/".format(_optionid=optionid)
+def market_data():
+    return api_url + "/marketdata/"
+
+def option_market_data(optionid):
+    return api_url + "/marketdata/options/{_optionid}/".format(_optionid=optionid)
 
 def convert_token():
     return "https://api.robinhood.com/oauth2/migrate_token/"
