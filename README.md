@@ -2,13 +2,15 @@
 
 A Python script to get a look at your trading history from trading options and individual equities on Robinhood: calculate profit/loss, sum dividend payouts and generate buy-and-hold comparison. 
 
+_UPDATE 2020-01-21 This code is so bad I almost want to delete it from my GH, but it works - and I've seen it get some of attention so I'm pushing this small update to make it usable (at least until RH changes their API again). Thanks to @nikhilsaraf who forked it and fixed the auth'ing problem._
+
 ## Features
 
 - *Calculate individual equities' trading pnl, dividends received, options trading pnl*
 - *Export CSV files with individual trades and other info*
 - *Export pickled dataframes*
 - *Specify date range to compare over*
-- *Generate buy-and-hold comparison*
+- *Print percent pnl*
 
 ## Download the repo
 From the command line: 
@@ -20,13 +22,22 @@ cd rh-profit-and-loss
 
 ## Run it, run it
 
+### First, grab an oauth token from your browser
+
+* Navigate to Robinhood.com, log out if you're already logged in.
+* Right Click > Inspect Element 
+* Click on Network tab
+* In the "Filter" text entry, type "token" 
+* With the network monitor open, login to Robinhood
+* You will see a few JSON files, find the one that has 'access_token' in the return, and copy that whole string
+
 Run with defaults (this will process your full account history, starting from your first trade):
 
-`python3 get_profit_and_loss.py --username <username> --password <password>` 
+`python3 get_profit_and_loss.py --username <username> --password <password> --access_token <longtextblob>` 
 
 For example: 
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one'`
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --access_token <longtextblob>`
 
 You'll see output like:
 
@@ -44,7 +55,7 @@ With your starting allocation of $10000, if you had just bought and held QQQ, yo
 
 For example:
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --start_date 'July 1, 2018' --end_date 'August 1, 2018'` 
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one'  --access_token <longtextblob> --start_date 'July 1, 2018' --end_date 'August 1, 2018'` 
 
 ### Export CSV files for further exploration
 
@@ -58,7 +69,7 @@ The script can output a number of CSV files:
 
 For example:
 
-`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --csv`
+`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one'  --access_token <longtextblob> --csv`
 
 ### Export dataframes as pickles for further exploration:
 
@@ -83,18 +94,6 @@ For example:
 
 `python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --pickle`
 
-### Input your starting portfolio allocation for an accurate buy-and-hold comparison
-
-#### Specify the `--starting_allocation` arg
-
-How would your portfolio have performed if you had just put that same amount of money into buying the NASDAQ? Input the amount of money you started investing with in Robinhood.
-
-For example:
-
-`python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizza!11one' --starting_allocation 5000`
-
-PS: If you enter your starting allocation, you'll also get an ROI metric.
-
 ### Example command with custom options chained together
 
 `python3 get_profit_and_loss.py --username 'timmyturtlehands@gmail.com' --password 'LovePizzaFhdjeiw!22222' --start_date 'July 1, 2018' --end_date 'November 10, 2018' --starting_allocation '5000' --csv`
@@ -110,14 +109,10 @@ six
 
 #### other notes and 'bibliography' ;)
 
-- If the stock isn't sold yet, it uses the last sale price from IEX to calculate your unrealized PnL. 
-
-- If you haven't closed an option, it will show as a loss for the full value you purchased for. It's a bit too complicated to try to calculate unrealized PnL for options. And anyway, it's a good lesson in the reality of options!
+- Includes unrealized gains (so, positions you haven't closed yet / stocks you haven't sold yet)
 
 - The `symbols_and_instruments_url` is a lookup table that provides RH's internal instrument ids for symbols, and vice versa, which are needed to interact with the API. By saving and updating this pickle, you reduce the amount of requests you make to the RH API. 
 
-- Special thanks to everyone who maintains the unofficial RH Python library, of which a modified version is included in this repo (https://github.com/Jamonek/Robinhood) 
+- Special thanks to everyone who maintains the unofficial RH Python library, of which a heavily modified, out-of-date version is included in this repo (https://github.com/Jamonek/Robinhood) 
 
 - Some of the order history code is borrowed from (https://github.com/rmccorm4/Robinhood-Scraper/blob/master/Robinhood/robinhood_pl.py) 
-
-- For the buy-and-hold calculation, QQQ historical data is from (https://www.kaggle.com/qks1lver/amex-nyse-nasdaq-stock-histories) and IEX, depending on how far back you're going. 

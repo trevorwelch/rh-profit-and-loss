@@ -138,3 +138,8 @@ def get_all_history_options_orders(my_trader):
 
 
 ### END ORDER HISTORY GETTING STUFF ####
+
+def pct_change(new_num, old_num):
+    change = new_num - old_num
+    pct_change = change / old_num
+    return round(pct_change*100, 2)

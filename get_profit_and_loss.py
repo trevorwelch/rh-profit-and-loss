@@ -7,10 +7,13 @@ import json
 import pandas as pd
 import requests
 import operator
+import traceback
+import sys
+
 import TW_robinhood_scripts as rh
 import Robinhood
 
-def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, start_date=None, end_date=None, csv_export=1, buy_and_hold=0, pickle=0, options=1):
+def rh_profit_and_loss(username=None, password=None, access_token=None, starting_allocation=5000, start_date=None, end_date=None, csv_export=1, buy_and_hold=0, pickle=0, options=1):
 
     # from rmccorm4 Robinhood-Scraper
     class Order:
@@ -60,7 +63,7 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
                 stocks[ticker].orders.append(Order(line[0], line[1], line[2], line[3], line[4], line[5]))
         return stocks
 
-    def calculate_itemized_pl(stocks):
+    def calculate_itemized_pl(stocks, my_trader):
         for stock in stocks.values():
             for order in stock.orders:
                 if order.side == 'buy':
@@ -73,9 +76,8 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
             # Handle outstanding shares - should be current positions
             if stock.net_shares > 0:
                 
-                requestResponse = requests.get("https://api.iextrading.com/1.0/stock/{}/price".format(stock.symbol.lower()))
-                json = requestResponse.json()
-                last_price = float(json)
+                price = my_trader.last_trade_price(stock.symbol)[0][0]
+                last_price = float(price)
 
                 # Add currently held shares from net_pl as if selling now (unrealized PnL)
                 stock.net_pl += stock.net_shares * last_price
@@ -84,10 +86,54 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
             elif stock.net_shares < 0:
                 stock.symbol += ' '
 
+    def calculate_outstanding_options(my_trader):
+        owned = my_trader.options_owned()
+
+        df_owned = pd.DataFrame(owned)
+
+        df_owned['quantity'] = pd.to_numeric(df_owned['quantity'])
+        df_owned['average_price'] = pd.to_numeric(df_owned['average_price'])
+        df_owned['trade_value_multiplier'] = pd.to_numeric(df_owned['trade_value_multiplier'])
+
+        pending = df_owned[
+            df_owned['quantity'] > 0
+        ]
+
+        pending = pending[['chain_symbol', 'quantity', 'average_price', 'option_id', 'trade_value_multiplier']].reset_index(drop=True)
+
+        pending['avg_option_cost'] = pending['average_price']/pending['trade_value_multiplier']
+
+        current_option_values = []
+        for each in pending['option_id'].values:
+            try:
+                current_price = my_trader.get_option_market_data(each)['adjusted_mark_price']
+            except Exception:
+                current_price = np.nan
+            
+            current_option_values.append(current_price)
+
+        pending['current_option_values'] = [float(x) for x in current_option_values]
+        pending['current_value'] = pending['current_option_values']*pending['quantity']*100
+
+        pending['date'] = pd.Timestamp.now()
+        pending = pending.set_index('date')
+
+        pending.to_csv('pending_options_orders_df.csv')
+
+        pending['position_effect'] = 'pending'
+        pending['value'] = pending['current_value']
+        pending['ticker'] = pending['chain_symbol']
+
+        pending['original_value'] = pending['quantity'] * pending['average_price']
+
+        return pending
+
 
     # INSTANTIATE ROBINHOOD my_trader #
     my_trader = Robinhood.Robinhood()
-    logged_in = my_trader.login(username=username, password=password)
+    logged_in = my_trader.set_oath_access_token(username, password, access_token)
+    if not logged_in:
+        logged_in = my_trader.login(username=username, password=password)
     my_account = my_trader.get_account()['url']
 
     df_order_history, _ = rh.get_order_history(my_trader)
@@ -109,7 +155,7 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
 
     df_orders.set_index('side').to_csv('orders.csv', header=None)
     stocks = itemize_stocks()
-    calculate_itemized_pl(stocks)
+    calculate_itemized_pl(stocks, my_trader)
 
     with open('stockwise_pl.csv', 'w') as outfile:
         writer = csv.writer(outfile, delimiter=',')
@@ -199,31 +245,6 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
     # Calculate the total pnl 
     pnl = float(df_pnl.sum()['net_pnl'])
 
-    if buy_and_hold == 1:
-
-        # Get historical price of QQQ 
-        requestResponse = requests.get("https://api.iextrading.com/1.0/stock/qqq/chart/5y")
-        json = requestResponse.json()
-        df_qqq = pd.DataFrame(json)
-        df_qqq.index = pd.to_datetime(df_qqq['date'])
-
-        # If the date is older than we can get from IEX, load the historical data
-        if pd.to_datetime(start_date) < df_qqq.iloc[0].name:
-            df_QQQ_history = pd.read_pickle('data/QQQ_close')
-            QQQ_starting_price = float(df_QQQ_history.iloc[0]['close'])
-        else:
-            df_qqq = df_qqq[start_date:end_date]
-            QQQ_starting_price = float(df_qqq.iloc[0]['close'])
-
-        # Filter the dataframe for start and end date
-        df_qqq = df_qqq[start_date:end_date]
-
-        # Set end price of the trading period
-        QQQ_ending_price = float(df_qqq.iloc[-1]['close'])
-
-        # Calculate the buy-and-hold value
-        QQQ_buy_and_hold_gain = starting_allocation*(QQQ_ending_price - QQQ_starting_price)/QQQ_starting_price
-
     # When printing the final output, if no date was provided, print "today"
     if end_date == 'January 1, 2030':
         end_date_string = 'today'
@@ -234,12 +255,29 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
     if options == 1:
         try:
             df_options_orders_history = rh.get_all_history_options_orders(my_trader)
+            pending_options = calculate_outstanding_options(my_trader)
+
+            df_options = pd.concat([
+                df_options_orders_history,
+                pending_options[['ticker', 'value', 'position_effect']],
+            ])
+
+            # More hacky shit cause this code is a mess
+            df_options = df_options.reset_index()
+            df_options['date'] = pd.to_datetime(df_options['date'], utc=True)
+            df_options = df_options.set_index(df_options['date'])
+
             if csv_export == 1:
-                df_options_orders_history.to_csv('options_orders_history_df.csv')
+                df_options.to_csv('options_orders_history_df.csv')
             if pickle == 1:
-                df_options_orders_history.to_pickle('df_options_orders_history')
-            options_pnl = df_options_orders_history[start_date:end_date]['value'].sum()
+                df_options.to_pickle('df_options_orders_history')
+
+            df_options = df_options[start_date:end_date]
+            options_pnl = df_options['value'].sum()
+
         except Exception as e:
+            print(traceback.format_exc())
+            print(sys.exc_info()[0])
             options_pnl = 0
 
     total_pnl = round(pnl + dividends_paid + options_pnl, 2)
@@ -252,14 +290,59 @@ def rh_profit_and_loss(username=None, password=None, starting_allocation=5000, s
     
     # Calculate ROI, if the user input a starting allocation
     if roi == 1:
-        return_on_investment = round((total_pnl/starting_allocation)*100, 2)
-        print("Your return-on-investment (ROI) is: %{}".format(return_on_investment))
+
+        # Calculate Stocks ROI 
+        long_entries = df_orders[
+            (df_orders['side'] == 'buy')
+            &
+            (df_orders['state'] == 'filled')
+        ]
+
+        long_entries['value'] = pd.to_numeric(long_entries['price'])*pd.to_numeric(long_entries['shares'])
+
+        starting_stock_investment = long_entries['value'].sum() 
+
+        stocks_roi = rh.pct_change(
+            pnl+starting_stock_investment,
+            starting_stock_investment
+            )
+        print("Your return-on-investment (ROI) for stock trades is: %{}".format(stocks_roi))
+
+        # Calculate Options ROI
+        # More hacky shit cause this code is a mess
+        df_options_orders_history = df_options_orders_history.reset_index()
+        df_options_orders_history['date'] = pd.to_datetime(df_options_orders_history['date'], utc=True)
+        df_options_orders_history = df_options_orders_history.set_index(df_options_orders_history['date'])
+
+        df_options_orders_history = df_options_orders_history[start_date:end_date]
+        options_entries = df_options_orders_history[
+            df_options_orders_history['value'] < 0
+        ]
+
+        starting_options_investment = options_entries['value'].sum()*-1
+
+        options_roi = rh.pct_change(
+            options_pnl+starting_options_investment,
+            starting_options_investment
+            )
+        print("Your return-on-investment (ROI) for options trades is: %{}".format(options_roi))
+
+        # print(starting_options_investment)
+        # print(options_pnl)
+        # print(pnl)
+        # print(starting_stock_investment)
+
+        return_on_investment = rh.pct_change(
+            options_pnl+starting_options_investment+pnl+starting_stock_investment,
+            starting_options_investment+starting_stock_investment
+            )
+        print("Your return-on-investment (ROI) on overall capital deployed is: %{}".format(return_on_investment))
     
     if buy_and_hold == 1:
         print("With a starting allocation of ${}, if you had just bought and held QQQ, your PnL would be ${}".format(starting_allocation, round(QQQ_buy_and_hold_gain,2)))
     print("~~~")
     # Delete the csv we were processing earlier
-    os.remove('stockwise_pl.csv')
+    # os.remove('stockwise_pl.csv')
 
 if __name__ == '__main__':
 
@@ -267,18 +350,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()  
     parser.add_argument("--username", help="username (required)")
     parser.add_argument("--password", help="password (required)")
+    parser.add_argument("--access_token", help="oath access_token (required)")
     parser.add_argument("--start_date", help="begin date for calculations")
     parser.add_argument("--end_date", help="begin date for calculations")
-    parser.add_argument("--starting_allocation", help="starting allocation for buy and hold")
     parser.add_argument("--csv", help="save csvs along the way", action="store_true")
     parser.add_argument("--pickle", help="save pickles along the way", action="store_true")
 
     args = parser.parse_args()
 
-    if args.username and args.password:
+    if args.username and args.password and args.access_token:
         print("Working...")
     else:
-        print("Please enter a username and password and try again!")
+        print("Please enter a username and password and access_token and try again!")
         sys.exit()
 
     # check for flag
@@ -305,20 +388,14 @@ if __name__ == '__main__':
     else:
         end_date = 'January 1, 2030'
 
-    # check of allocation
-    if args.starting_allocation:
-        starting_allocation = float(args.starting_allocation)
-        roi = 1
-    else:
-        starting_allocation = 10000
-        roi = 0
+    roi = 1
 
     rh_profit_and_loss(username=args.username, 
                         password=args.password,
+                        access_token=args.access_token,
                         start_date=start_date, 
-                        end_date=end_date, 
-                        starting_allocation=starting_allocation, 
+                        end_date=end_date,
                         csv_export=csv_export, 
-                        buy_and_hold=1,
+                        buy_and_hold=0,
                         options=1, 
                         pickle=pickle)
