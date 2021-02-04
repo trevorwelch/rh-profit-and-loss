@@ -2,7 +2,7 @@
 
 A Python script to get a look at your trading history from trading options and individual equities on Robinhood: calculate profit/loss, sum dividend payouts and generate buy-and-hold comparison. 
 
-_UPDATE 2020-01-21 This code is so bad I almost want to delete it from my GH, but it works - and I've seen it get some of attention so I'm pushing this small update to make it usable (at least until RH changes their API again). Thanks to @nikhilsaraf who forked it and fixed the auth'ing problem._
+_UPDATE 2020-01-21: This code is so bad I almost want to delete it from my GH, but it works - and I've seen it get some attention so I'm pushing this small update to make it usable (at least until RH changes their API again). Thanks to @nikhilsaraf who forked it and fixed the auth'ing problem._
 
 ## Features
 
@@ -44,7 +44,6 @@ You'll see output like:
 ```
 From November 4, 2018 to today, your total PnL is $486.45
 You've made $390.1 buying and selling individual equities, received $16.35 in dividends, and made $80.0 on options trades
-With your starting allocation of $10000, if you had just bought and held QQQ, your PnL would have been $-51.49
 ```
 
 ## Run it and utilize other features
