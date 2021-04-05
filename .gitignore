@@ -2,5 +2,4 @@
 *.ipynb_checkpoints
 __pycache__
 *.csv
-symbol_and_instrument_urls
 .vscode/
