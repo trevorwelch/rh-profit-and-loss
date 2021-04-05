@@ -110,7 +110,7 @@ def get_all_history_options_orders(my_trader):
         options_orders.extend(past_options_orders['results'])
     # print("{} order fetched".format(len(orders)))
     
-    options_orders_cleaned = []
+    options_orders_cleaned = np.empty((0, 4))
     
     for each in options_orders:
         if float(each['processed_premium']) < 1:
@@ -141,5 +141,5 @@ def get_all_history_options_orders(my_trader):
 
 def pct_change(new_num, old_num):
     change = new_num - old_num
-    pct_change = change / old_num
+    pct_change = change / old_num if old_num else 0
     return round(pct_change*100, 2)
