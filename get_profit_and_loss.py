@@ -89,42 +89,45 @@ def rh_profit_and_loss(username=None, password=None, access_token=None, starting
     def calculate_outstanding_options(my_trader):
         owned = my_trader.options_owned()
 
-        df_owned = pd.DataFrame(owned)
+        pending = None
 
-        df_owned['quantity'] = pd.to_numeric(df_owned['quantity'])
-        df_owned['average_price'] = pd.to_numeric(df_owned['average_price'])
-        df_owned['trade_value_multiplier'] = pd.to_numeric(df_owned['trade_value_multiplier'])
+        if (len(owned) > 0):
+            df_owned = pd.DataFrame(owned)
 
-        pending = df_owned[
-            df_owned['quantity'] > 0
-        ]
+            df_owned['quantity'] = pd.to_numeric(df_owned['quantity'])
+            df_owned['average_price'] = pd.to_numeric(df_owned['average_price'])
+            df_owned['trade_value_multiplier'] = pd.to_numeric(df_owned['trade_value_multiplier'])
 
-        pending = pending[['chain_symbol', 'quantity', 'average_price', 'option_id', 'trade_value_multiplier']].reset_index(drop=True)
+            pending = df_owned[
+                df_owned['quantity'] > 0
+            ]
 
-        pending['avg_option_cost'] = pending['average_price']/pending['trade_value_multiplier']
+            pending = pending[['chain_symbol', 'quantity', 'average_price', 'option_id', 'trade_value_multiplier']].reset_index(drop=True)
 
-        current_option_values = []
-        for each in pending['option_id'].values:
-            try:
-                current_price = my_trader.get_option_market_data(each)['adjusted_mark_price']
-            except Exception:
-                current_price = np.nan
-            
-            current_option_values.append(current_price)
+            pending['avg_option_cost'] = pending['average_price']/pending['trade_value_multiplier']
 
-        pending['current_option_values'] = [float(x) for x in current_option_values]
-        pending['current_value'] = pending['current_option_values']*pending['quantity']*100
+            current_option_values = []
+            for each in pending['option_id'].values:
+                try:
+                    current_price = my_trader.get_option_market_data(each)['adjusted_mark_price']
+                except Exception:
+                    current_price = np.nan
+                
+                current_option_values.append(current_price)
 
-        pending['date'] = pd.Timestamp.now()
-        pending = pending.set_index('date')
+            pending['current_option_values'] = [float(x) for x in current_option_values]
+            pending['current_value'] = pending['current_option_values']*pending['quantity']*100
 
-        pending.to_csv('pending_options_orders_df.csv')
+            pending['date'] = pd.Timestamp.now()
+            pending = pending.set_index('date')
 
-        pending['position_effect'] = 'pending'
-        pending['value'] = pending['current_value']
-        pending['ticker'] = pending['chain_symbol']
+            pending.to_csv('pending_options_orders_df.csv')
 
-        pending['original_value'] = pending['quantity'] * pending['average_price']
+            pending['position_effect'] = 'pending'
+            pending['value'] = pending['current_value']
+            pending['ticker'] = pending['chain_symbol']
+
+            pending['original_value'] = pending['quantity'] * pending['average_price']
 
         return pending
 
@@ -257,23 +260,26 @@ def rh_profit_and_loss(username=None, password=None, access_token=None, starting
             df_options_orders_history = rh.get_all_history_options_orders(my_trader)
             pending_options = calculate_outstanding_options(my_trader)
 
-            df_options = pd.concat([
-                df_options_orders_history,
-                pending_options[['ticker', 'value', 'position_effect']],
-            ])
+            options_pnl = 0
 
-            # More hacky shit cause this code is a mess
-            df_options = df_options.reset_index()
-            df_options['date'] = pd.to_datetime(df_options['date'], utc=True)
-            df_options = df_options.set_index(df_options['date'])
+            if (pending_options is not None and pending_options.len() > 0):
+                df_options = pd.concat([
+                    df_options_orders_history,
+                    pending_options[['ticker', 'value', 'position_effect']],
+                ])
 
-            if csv_export == 1:
-                df_options.to_csv('options_orders_history_df.csv')
-            if pickle == 1:
-                df_options.to_pickle('df_options_orders_history')
+                # More hacky shit cause this code is a mess
+                df_options = df_options.reset_index()
+                df_options['date'] = pd.to_datetime(df_options['date'], utc=True)
+                df_options = df_options.set_index(df_options['date'])
 
-            df_options = df_options[start_date:end_date]
-            options_pnl = df_options['value'].sum()
+                if csv_export == 1:
+                    df_options.to_csv('options_orders_history_df.csv')
+                if pickle == 1:
+                    df_options.to_pickle('df_options_orders_history')
+
+                df_options = df_options[start_date:end_date]
+                options_pnl = df_options['value'].sum()
 
         except Exception as e:
             print(traceback.format_exc())
